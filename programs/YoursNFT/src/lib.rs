@@ -17,9 +17,10 @@ pub mod yours_nft {
         metadata_title: String,
         metadata_symbol: String,
         metadata_uri: String,
-        benefit_uri: String
+        benefit_uri: String,
+        benefits: Vec<u64>,
     ) -> Result<()> {
-        mint::mint(ctx, metadata_title, metadata_symbol, metadata_uri, benefit_uri)
+        mint::mint(ctx, metadata_title, metadata_symbol, metadata_uri, benefit_uri, benefits)
     }
 
     pub fn sell(ctx: Context<SellNFT>, sale_lamports: u64) -> Result<()> {

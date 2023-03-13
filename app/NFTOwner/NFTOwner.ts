@@ -21,7 +21,7 @@ export class NFTOwner {
         const benefitAddress: anchor.web3.PublicKey = await this.createBenefitAddress(mintKeypair);
         console.log("benefit address:  ", benefitAddress);
         await this.callMint(masterEditionAddress, metadataAddress, mintKeypair, tokenAddress, benefitAddress, nftData);
-        console.log(this.program.account.benefitUriAccount)
+        console.log(benefitAddress)
         const account = await this.program.account.benefitUriAccount.fetch(benefitAddress)
         console.log("result: ", account.benefitUri);
     }
@@ -107,13 +107,13 @@ export class NFTOwner {
             nftData.title, nftData.symbol, nftData.uri, nftData.benefit_uri
         )
             .accounts({
-                masterEdition: masterEditionAddress,
                 metadata: metadataAddress,
+                masterEdition: masterEditionAddress,
                 mint: mintKeypair.publicKey,
                 tokenAccount: tokenAddress,
                 mintAuthority: this.wallet.publicKey,
-                tokenMetadataProgram: this.tokenMetaDataProgramID,
-                benefitInfo: benefitAddress
+                benefitInfo: benefitAddress,
+                tokenMetadataProgram: this.tokenMetaDataProgramID,  
             })
             .signers([mintKeypair])
             .rpc();
