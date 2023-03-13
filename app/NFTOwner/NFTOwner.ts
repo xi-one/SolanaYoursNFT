@@ -18,7 +18,12 @@ export class NFTOwner {
         const tokenAddress: anchor.web3.PublicKey = await this.createTokenAddress(mintKeypair.publicKey, this.wallet.publicKey);
         const metadataAddress: anchor.web3.PublicKey = await this.createMetadataAddress(mintKeypair);
         const masterEditionAddress: anchor.web3.PublicKey = await this.createMasterEditionAddress(mintKeypair);
-        await this.callMint(masterEditionAddress, metadataAddress, mintKeypair, tokenAddress, nftData);
+        const benefitAddress: anchor.web3.PublicKey = await this.createBenefitAddress(mintKeypair);
+        console.log("benefit address:  ", benefitAddress);
+        await this.callMint(masterEditionAddress, metadataAddress, mintKeypair, tokenAddress, benefitAddress, nftData);
+        console.log(this.program.account.benefitUriAccount)
+        const account = await this.program.account.benefitUriAccount.fetch(benefitAddress)
+        console.log("result: ", account.benefitUri);
     }
 
     async sell(nftPublicKey: anchor.web3.PublicKey, keypairJohn: anchor.web3.Keypair) {
@@ -86,9 +91,20 @@ export class NFTOwner {
         ))[0];
     }
 
-    private async callMint(masterEditionAddress: anchor.web3.PublicKey, metadataAddress: anchor.web3.PublicKey, mintKeypair: anchor.web3.Keypair, tokenAddress: anchor.web3.PublicKey, nftData: NFTData) {
+    private async createBenefitAddress(mintKeypair: anchor.web3.Keypair): Promise<anchor.web3.PublicKey> {
+        console.log("create benefit address...");
+        return (await anchor.web3.PublicKey.findProgramAddress(
+            [
+                Buffer.from("benefitURI"),
+                mintKeypair.publicKey.toBuffer()
+            ],
+            this.program.programId
+        ))[0];
+    }
+
+    private async callMint(masterEditionAddress: anchor.web3.PublicKey, metadataAddress: anchor.web3.PublicKey, mintKeypair: anchor.web3.Keypair, tokenAddress: anchor.web3.PublicKey, benefitAddress: anchor.web3.PublicKey, nftData: NFTData) {
         await this.program.methods.mint(
-            nftData.title, nftData.symbol, nftData.uri
+            nftData.title, nftData.symbol, nftData.uri, nftData.benefit_uri
         )
             .accounts({
                 masterEdition: masterEditionAddress,
@@ -97,6 +113,7 @@ export class NFTOwner {
                 tokenAccount: tokenAddress,
                 mintAuthority: this.wallet.publicKey,
                 tokenMetadataProgram: this.tokenMetaDataProgramID,
+                benefitInfo: benefitAddress
             })
             .signers([mintKeypair])
             .rpc();
@@ -116,4 +133,6 @@ export class NFTOwner {
             .signers([keypairBuyer])
             .rpc();
     }
+
+    
 }

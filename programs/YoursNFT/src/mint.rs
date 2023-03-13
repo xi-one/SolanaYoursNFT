@@ -11,6 +11,7 @@ pub fn mint(
     metadata_title: String,
     metadata_symbol: String,
     metadata_uri: String,
+    benefit_uri: String
 ) -> Result<()> {
     create_mint_account(&ctx)?;
     initialize_mint_account(&ctx)?;
@@ -18,11 +19,13 @@ pub fn mint(
     mint_token_to_account(&ctx)?;
     create_metadata_account(&ctx, metadata_title, metadata_symbol, metadata_uri)?;
     //create_master_edition_metadata_account(&ctx)?;
+    create_benefit_info(ctx, benefit_uri)?;
     msg!("Token mint process completed successfully.");
     Ok(())
 }
 
 #[derive(Accounts)]
+#[instruction(benefit_uri: String)]
 pub struct MintNFT<'info> {
     /// CHECK: We are about to create this with Metaplex
     #[account(mut)]
@@ -37,12 +40,27 @@ pub struct MintNFT<'info> {
     pub token_account: UncheckedAccount<'info>,
     #[account(mut)]
     pub mint_authority: Signer<'info>,
+    #[account(
+        init,
+        seeds = [b"benefitURI", mint.key().as_ref()],
+        bump,
+        payer = mint_authority,
+        space = benefit_uri.len() + 4 + 8
+    )]
+    pub benefit_info: Account<'info, BenefitURIAccount>,
+    //------program served------
     pub rent: Sysvar<'info, Rent>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, token::Token>,
     pub associated_token_program: Program<'info, associated_token::AssociatedToken>,
+    //------program served------
     /// CHECK: Metaplex will check this
     pub token_metadata_program: UncheckedAccount<'info>,
+}
+
+#[account]
+pub struct BenefitURIAccount {
+    pub benefit_uri: String,
 }
 
 fn create_mint_account(ctx: &Context<MintNFT>) -> Result<()> {
@@ -180,6 +198,10 @@ fn create_master_edition_metadata_account(ctx: &Context<MintNFT>) -> ProgramResu
     )
 }
 
-fn create_benefit_list(ctx: &Context<MintNFT>, benefitURI: Stirng ) -> ProgramResult {
-
+fn create_benefit_info(ctx: Context<MintNFT>, benefitURI: String ) -> ProgramResult {
+    msg!("Creating benefit info...");
+    msg!("Mint: {}", &ctx.accounts.benefit_info.key());
+    let benefit_account = &mut ctx.accounts.benefit_info;
+    benefit_account.benefit_uri = benefitURI;
+    Ok(())
 }
